@@ -6,7 +6,7 @@ define([
     'modules/api',
     'hyprlivecontext',
     'modules/checkout/models-checkout-step',
-    'modules/checkout/models-fulfillment-contact'
+    'modules/checkout/model-fulfillment-contact'
 ],
 function ($, _, Hypr, Backbone, api, HyprLiveContext, CheckoutStep, FulfillmentContact) {
 

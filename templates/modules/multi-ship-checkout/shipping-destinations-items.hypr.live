@@ -1,0 +1,3 @@
+{% for item in model.items %}
+	{% include "modules/multi-ship-checkout/shipping-destinations-item" with model=item forloop=forloop%}
+{% endfor %}

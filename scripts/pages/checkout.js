@@ -1,4 +1,13 @@
-require(["modules/jquery-mozu", "underscore", "hyprlive", "modules/backbone-mozu", "modules/models-checkout", "modules/views-messages", "modules/cart-monitor", 'hyprlivecontext', 'modules/editable-view', 'modules/preserve-element-through-render'], function ($, _, Hypr, Backbone, CheckoutModels, messageViewFactory, CartMonitor, HyprLiveContext, EditableView, preserveElements) {
+require(["modules/jquery-mozu", 
+    "underscore", "hyprlive", 
+    "modules/backbone-mozu", 
+    "modules/models-checkout", 
+    "modules/views-messages", 
+    "modules/cart-monitor", 
+    'hyprlivecontext', 
+    'modules/editable-view', 
+    'modules/preserve-element-through-render'], 
+    function ($, _, Hypr, Backbone, CheckoutModels, messageViewFactory, CartMonitor, HyprLiveContext, EditableView, preserveElements) {
 
 
     var CheckoutStepView = EditableView.extend({
@@ -506,7 +515,7 @@ require(["modules/jquery-mozu", "underscore", "hyprlive", "modules/backbone-mozu
                 steps: {
                     shippingAddress: new ShippingAddressView({
                         el: $('#step-shipping-address'),
-                        model: checkoutModel.get("fulfillmentInfo").get("fulfillmentContact")
+                        model: checkoutModel.get('fulfillmentInfo').get('fulfillmentContact')
                     }),
                     shippingInfo: new ShippingInfoView({
                         el: $('#step-shipping-method'),

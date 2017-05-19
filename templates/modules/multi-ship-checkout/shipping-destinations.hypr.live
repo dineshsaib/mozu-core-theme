@@ -1,0 +1,16 @@
+
+<div class="mz-formstep-fields mz-l-formfieldgroup mz-checkoutform mz-checkoutform-active">
+  {% for item in model.items %}
+  	<div class="mz-shipping-destinations">
+  	{% with item.items|first as destinationDetails %}
+  		<h3 class="mz-shipping-destinations-heading">{{ destinationDetails.product.name }}</h3>
+  	{% endwith %}
+	  	<div data-mz-shipping-destinations-items data-mz-line-id="{{ item.lineId }}">
+	    	{% include "modules/multi-ship-checkout/shipping-destinations-items" with model=item%}
+      </div>	    
+    </div>
+  {% endfor %}
+</div>
+<div class="mz-formstep-summary mz-addresssummary mz-checkoutform-active">
+  <span class="mz-summary-text"> {{ labels.multiShipAddressSummary|string_format(model.fulfillmentinfo.length)}}</span>    
+</div>

@@ -1,186 +1,16 @@
 define([
-    'modules/jquery-mozu',
-    'underscore',
-    'hyprlive',
-    'modules/backbone-mozu',
-    'modules/api',
-    'hyprlivecontext',
-    'modules/models-customer',
-    'modules/checkout/models-checkout-step'
-],
-function ($, _, Hypr, Backbone, api, HyprLiveContext, CustomerModels, CheckoutStep) {
+        'modules/jquery-mozu',
+        'underscore',
+        'hyprlive',
+        'modules/backbone-mozu',
+        'modules/api',
+        'modules/models-customer',
+        'hyprlivecontext',
+        'modules/checkout/models-checkout-step'
+    ],
+    function($, _, Hypr, Backbone, api, CustomerModels, HyprLiveContext, CheckoutStep) {
 
-    var ShippingDestinationItem = Backbone.MozuModel.extend({
-        //validation: CustomerModels.Contact.prototype.validation,
-        dataTypes: {
-            fulfillmentInfoId: function(val) {
-                    return (val === 'new') ? val : Backbone.MozuModel.DataTypes.Int(val);
-                }
-        },
-        helpers: ['fulfillmentContacts', 'filteredFulfillmentContacts'],
-        initialize: function(){
-            var self = this;
-
-            //Placeholder for fulfillmentID
-            
-            self.set('fulfillmentInfoId', 'new');
-        },
-        
-        decreaseQuanitiyByOne: function(){
-            var quantity = this.get('quantity');
-            if(quantity > 1) {
-                this.updateDestinationQuanitiy(quantity - 1);
-            }
-        },
-        getCheckout : function(){
-            return this.collection.parent.collection.parent.parent;
-        },
-        getFulfillmentInfo : function(){
-            return this.getCheckout().get('fulfillmentInfo');
-        },
-        getCustomerInfo : function(){
-            return this.getCheckout().get('customer');
-        },
-        selectedFulfillmentAddress : function(){
-            return this.collection.parent.selectedFulfillmentAddress();     
-        },
-        fulfillmentContacts : function(){
-           return this.getCustomerInfo().get('contacts').toJSON();
-        },
-        filteredFulfillmentContacts : function() {
-            var self =this;
-            _.filter(self.fulfillmentContacts(), function(fulfillmentContact){
-                return _.filter(self.selectedFulfillmentAddress(), function(fulfillmentId){
-                    if(fulfillmentContact.id == fulfillmentId && self.fulfillmentId != fulfillmentId){
-                        return true;
-                    }
-                    return false;
-                })
-
-            })
-        },
-        /**
-         * Calls the SDK to update the checkout qunaity for that item. 
-         * Returning a new checkout model containing updated quantity and price info
-         */
-        updateDestinationQuanitiy: function(quantity){
-            var self = this;
-            self.set('quantity', quantity);
-            return this;
-        },
-        /**
-         * Sets the checkout items fulfillmentInfoId and saves this via the SDK 
-         * 
-         */
-        changeDestinationAddress: function(fulfillmentId){
-            var self = this;
-            self.set('fulfillmentInfoId', fulfillmentId);
-            return this;
-        },
-        /**
-         * Gets the apporperate fulfillmentContact and fires the [] event to 
-         * open our fulfillmentContact modal editor.
-         */
-        editSavedContact: function(){
-            this.get('fullfilmentInfoId');
-        },
-        addNewDestination: function(){
-            this.collection.parent.addNewDestination();
-        },
-        removeDestination: function(){
-            this.collection.parent.removeDestination(this.get('lineId'), this.get('id'));
-        }
-
-    });
-    //
-    // [{lineId: int, items: []}]
-    // 
-    var ShippingDestination = Backbone.MozuModel.extend({
-        relations: {
-            items: Backbone.Collection.extend({
-                model: ShippingDestinationItem
-            })
-        },
-        idAttribute: "lineId",
-        //validation: CustomerModels.Contact.prototype.validation,
-        initialize: function(){
-            // var self = this;
-            // _.each(self, function(item, idx){
-            //     var existingDestination = self.findWhere({fulfillmentId: self.fulfillmentId});
-            //     if(existingDestination){
-            //         existingDestination.get('items').add(new ShippingDestinationAddress(item));    
-            //     } else {
-            //         self.get('destinations').add(new ShippingDestination(item));
-            //     }
-            // })
-        },
-        addNewDestination : function(){
-            var self = this,
-            newItem = self.get('items').toJSON(); 
-
-            newItem[0].quantity = 1;
-            if(newItem[0])
-            self.get('items').add(new ShippingDestination(newItem[0]));
-
-            var destinationToSubtractFrom = self.get('items').find(function(destination){
-                if(destination.get('quantity') > 1){
-                    return true;
-                }
-                return false;
-            });
-
-            if(destinationToSubtractFrom){
-                destinationToSubtractFrom.decreaseQuanitiyByOne();
-            }
-            
-        },
-        selectedFulfillmentAddress : function(){
-            var self = this;
-            return self.collection.pluck("id");
-        },
-        removeDestination: function(lineId, id){
-            var self = this;
-            self.get(lineId).get('items').remove(id);
-        },
-        savedAddresses: function(){
-
-        }
-    });
-    //
-    // [{lineId: int, items: []}]
-    //
-    var CheckoutItems = Backbone.Collection.extend({
-        /**
-         * Adds a new shipping destination for the checkout item
-         * - If other addresses have multiple items subtract 1 from the closest adjacent item.
-         * - If other addresses have only 1 item, simple add address
-         * Api call to set new address is not made until an address is selected
-         */
-        
-        initialize: function(){
-            
-        }
-    });
-
-    var ShippingStep = CheckoutStep.extend({
-        relations : {
-            items : Backbone.Collection.extend({
-                model: ShippingDestination
-            })
-        },
-        initSet : function(){
-           var self = this;
-            var orderItems = self.parent.get('items');
-            var groupedOrderItems = _.groupBy(orderItems, 'lineId');
-            _.each(groupedOrderItems, function(value, key){
-                self.get('items').add(new ShippingDestination({ lineId: key, items: value }));
-            }); 
-        }
-    });
-
-    
-
-    var FulfillmentContact = Backbone.Collection.extend({
+        var FulfillmentContact = CheckoutStep.extend({
             relations: CustomerModels.Contact.prototype.relations,
             validation: CustomerModels.Contact.prototype.validation,
             digitalOnlyValidation: {
@@ -416,5 +246,5 @@ function ($, _, Hypr, Backbone, api, HyprLiveContext, CustomerModels, CheckoutSt
                 });
             }
         });
-        return ShippingStep;
-});
+        return FulfillmentContact;
+    });

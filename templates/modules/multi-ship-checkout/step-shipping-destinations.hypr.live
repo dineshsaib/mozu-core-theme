@@ -1,0 +1,16 @@
+    <h3 class="mz-formstep-header mz-checkoutform-header">
+        {{ labels.shippingInformation }}
+        <a href="javascript:;" class="mz-formstep-edit" data-mz-action="edit">{{ labels.change }}</a>
+    </h3>
+  <div class="mz-formstep-body">
+      {% include "modules/multi-ship-checkout/shipping-destinations" %}
+      {% if model.isMultiShip %}
+      	{% include "modules/multi-ship-checkout/shipping-destinations" %}
+        {% include "modules/multi-ship-checkout/shipping-destination-single" %}
+      {% else %}
+      	
+      {% endif %}
+  <div class="mz-formstep-next">
+      <button class="mz-button" data-mz-action="next">{{ labels.next }}</button>
+  </div>
+</div>    

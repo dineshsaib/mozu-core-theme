@@ -1,0 +1,38 @@
+<div data-mz-shipping-destinations-item data-mz-item-id="{{model.id}}" data-mz-fulfillment-info-Id="{{model.fulfillmentInfoId}}"" data-mz-model-id="{{model.cid}}" class="mz-l-formfieldgroup-row">
+	<div class="mz-l-formfieldgroup-cell">
+		<label for="mz-shipping-destination-quantity">{{ labels.shippingDestinationQuantityLabel }}</label>
+		<input id="mz-shipping-destination-quantity" type="number" name="quantity" min="1" data-mz-destination-quantity value="{{ model.quantity }}"></input>
+	</div>
+	<div class="mz-l-formfieldgroup-cell">
+		<div class="mz-l-formfieldgroup-row mz-shipping-destination">
+			<div class="mz-l-formfieldgroup-cell">
+				<label for="mz-shipping-destination-address">{{ labels.shippingDestinationAddressLabel }}</label>
+			</div>
+
+			<div class="mz-l-formfieldgroup-cell">
+				<span class="mz-validationmessage" data-mz-validationmessage-for="shippingDestinationAddress"></span>
+				<select id="mz-shipping-destination-address" name="shippingDestinationAddress" class="mz-shipping-destination-address-dd" data-mz-value="fulfillmentContactId">
+			        <option selected="selected" value="null">{{ labels.shippingDestinationSelect }}</option>
+		            {% for contact in model.fulfillmentContacts %}
+		            	<option class="mz-shipping-destination-address-select" value="{{ address.id }}" {% if model.fulfillmentContactId == contact.id %} selected="selected" {% endif %}>{{ contact.address.address1 }}, {{ contact.address.cityOrTown }} {{ contact.address.stateOrProvince }}</option>
+		            {% endfor %}
+		            <option value="new" class="mz-shipping-destination-address-select-new-address" data-mz-action="handleNewContact">{{ labels.shippingDestinationNewAddress }}</option>
+        		</select>
+    		</div>
+		</div>
+
+		<div class="mz-l-formfieldgroup-row mz-shipping-destination">
+			<div class="mz-l-formfieldgroup-cell"></div>
+			<div class="mz-l-formfieldgroup-cell">
+				{% if model.fulfillmentInfoId %}
+					<a class="mz-shipping-destination-edit-address-link" data-mz-action="handleEditContact">{{ labels.shippingDestinationEditAddress}}</a>
+				{% endif %}
+			</div>
+		</div>	
+	</div>
+	<div class="mz-l-formfieldgroup-cell">
+	{% if model.quantity > 1 %}
+		<a class="mz-shipping-destination-add-address-link" data-mz-action="handleAddNewDestination"> {{ labels.shippingDestinationAddAddress }} </a>
+	{% endif %}
+	</div>
+</div>

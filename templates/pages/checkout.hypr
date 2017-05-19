@@ -15,7 +15,7 @@
 
 {% block body-content %}
 
-{% require_script "pages/checkout" %}
+{% require_script "pages/multi-ship-checkout" %}
 
 {% preload_json model "checkout" %}
 
@@ -55,7 +55,7 @@
     <div class="mz-l-column">
 
         <div class="mz-formstep mz-checkoutform-shippingaddress" id="step-shipping-address">
-            {% include "modules/checkout/step-shipping-address" %}
+            {% include "modules/multi-ship-checkout/step-shipping-destinations" %}
         </div>
 
         <div class="mz-formstep mz-checkoutform-shippingmethod" id="step-shipping-method" {% if not model.requiresFulfillmentInfo %}style="display:none"{% endif %}>

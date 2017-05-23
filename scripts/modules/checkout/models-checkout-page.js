@@ -79,14 +79,15 @@ var CheckoutPage = Backbone.MozuModel.extend({
                 var self = this,
                     user = require.mozuData('user');
                     self.get('shippingDestinations').initSet();
+                    
                 _.defer(function() {
 
                     var latestPayment = self.apiModel.getCurrentPayment(),
                         activePayments = self.apiModel.getActivePayments(),
                         fulfillmentInfo = self.get('fulfillmentInfo'),
-                        fulfillmentContact = fulfillmentInfo.get('fulfillmentContact'),
+                        shippingDestinations = self.get('shippingDestinations'),
                         billingInfo = self.get('billingInfo'),
-                        steps = [fulfillmentInfo, fulfillmentContact, billingInfo],
+                        steps = [shippingDestinations, fulfillmentInfo, billingInfo],
                         paymentWorkflow = latestPayment && latestPayment.paymentWorkflow,
                         visaCheckoutPayment = activePayments && _.findWhere(activePayments, { paymentWorkflow: 'VisaCheckout' }),
                         allStepsComplete = function () {

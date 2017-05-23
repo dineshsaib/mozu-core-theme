@@ -1,0 +1,15 @@
+<h3 class="mz-formstep-header mz-checkoutform-header">
+        {{ labels.shippingMethod }}
+</h3>
+<div class="mz-formstep-body mz-checkoutform">
+    {% include "modules/multi-ship-checkout/shipping-methods" %}
+    {% if model.isMultiShip %}
+        {% include "modules/multi-ship-checkout/shipping-methods" %}
+        {% include "modules/multi-ship-checkout/shipping-methods-single" %}
+    {% else %}
+
+    {% endif %}
+    <div class="mz-formstep-next">
+        <button type="button" class="mz-button" data-mz-action="next">{{ labels.next }}</button>
+    </div>
+</div>

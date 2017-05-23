@@ -10,44 +10,24 @@ define([
 ],
 function ($, _, Hypr, Backbone, api, HyprLiveContext, CheckoutStep, FulfillmentContact) {
 
-    var FulfillmentInfo = CheckoutStep.extend({
-            initialize: function () {
-                var self = this;
-                // 
-                // this.on('change:availableShippingMethods', function (me, value) {
-                //     me.updateShippingMethod(me.get('shippingMethodCode'), true);
-                // });
-                // _.defer(function () {
-                //     // This adds the price and other metadata off the chosen
-                //     // method to the info object itself.
-                //     // This can only be called after the order is loaded
-                //     // because the order data will impact the shipping costs.
-                //     me.updateShippingMethod(me.get('shippingMethodCode'), true);
-                // });
-                // 
-                
-                /**
-                 * Used to set default Shipping Method on page load
-                 */
-                self.chooseDefaultShippingMethod();
+    var FulfillmentInfoItem = Backbone.MozuModel.extend({
+        relations: {
+            fulfillmentContact: FulfillmentContact
+        },
+        validation: {
+            shippingMethodCode: {
+                required: true,
+                msg: Hypr.getLabel('chooseShippingMethod')
+            }
+        },
+        getOrder: function() {
+                return this.collection.parent.parent;
             },
-            relations: {
-                fulfillmentContact: FulfillmentContact
-            },
-            validation: {
-                shippingMethodCode: {
-                    required: true,
-                    msg: Hypr.getLabel('chooseShippingMethod')
-                }
-            },
-            getOrder: function() {
-                return this.parent;
-            },
-            compareShippingMethods: function(newMethods){
-                var self = this;
-                return _.isMatch(self.get('availableShippingMethods'), newMethods);
-            },
-            getShippingMethodsFromContact: function(){
+        compareShippingMethods: function(newMethods){
+            var self = this;
+            return _.isMatch(self.get('availableShippingMethods'), newMethods);
+        },
+        getShippingMethodsFromContact: function(){
                 var self = this;
                 self.isLoading(true);
                 self.getOrder().apiModel.getShippingMethodsFromContact().then(function (methods) {
@@ -73,7 +53,7 @@ function ($, _, Hypr, Backbone, api, HyprLiveContext, CheckoutStep, FulfillmentC
                 //Side Affect, Refresh should refresh nothing more
                 // //always make them choose again
                 //_.each(['shippingMethodCode', 'shippingMethodName'], this.unset, this);
-
+                
                 //Side Affect, Refresh should refresh nothing more
                 // //after unset we need to select the cheapest option
                 //this.updateShippingMethod();
@@ -88,7 +68,7 @@ function ($, _, Hypr, Backbone, api, HyprLiveContext, CheckoutStep, FulfillmentC
                 if (!this.requiresFulfillmentInfo()) return this.stepStatus('complete');
 
                 // If there's no shipping address yet, go blank.
-                if (this.get('fulfillmentContact').stepStatus() !== 'complete') {
+                if (this.parent.get('shippingDestinations').stepStatus() !== 'complete') {
                     return this.stepStatus('new');
                 }
 
@@ -137,6 +117,43 @@ function ($, _, Hypr, Backbone, api, HyprLiveContext, CheckoutStep, FulfillmentC
                             }
                         });
                 }
+            }
+    })
+
+    var FulfillmentInfo = CheckoutStep.extend({ 
+            relations: {
+                items: Backbone.Collection.extend({
+                    model : FulfillmentInfoItem
+                })
+            },
+            validation: {
+
+            },
+            initSet : function(){
+                var self = this;
+                self = this;
+                this.items.reset();
+                _.each(self.unquieFulfillmentContactsOnOrders(), function(id){
+                    self.createFulfillmentItem(id);
+                }) 
+            },
+            getOrder: function() {
+                return this.parent;
+            },
+            unquieFulfillmentContactsOnOrders : function(){
+                var self =this,
+                    contactIds = []
+               self.getOrder().get('shippingDestinations').get('items').each(function(destination){
+                    contactIds = contactIds.concat(destination.get('items').pluck('fulfillmentContactId'));
+                })
+                return _.uniq(contactIds);
+            },
+            createFulfillmentItem: function(contactId){
+                var contact = this.getOrder().get('customer').get('contacts').findWhere({contactId : contactId}); 
+                this.get('items').add(new FulfillmentInfoItem({fulfillmentContact: contact.toJSON()}));
+            },
+            shippingInfoUpdated: function(){
+                this.trigger('shippingInfoUpdated');
             },
             next: function () {
                 this.stepStatus('complete');

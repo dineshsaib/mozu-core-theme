@@ -3,8 +3,9 @@ define(["modules/jquery-mozu",
     "hyprlive", 
     "modules/backbone-mozu", 
     'hyprlivecontext',
-    "modules/checkout/views-checkout-step"], 
-    function ($, _, Hypr, Backbone, HyprLiveContext, CheckoutStepView) {
+    "modules/checkout/views-checkout-step",
+    'modules/editable-view'], 
+    function ($, _, Hypr, Backbone, HyprLiveContext, CheckoutStepView, EditableView) {
         var SingleShippingAddressView = CheckoutStepView.extend({
                 templateName: 'modules/checkout/step-shipping-address',
                 autoUpdate: [
@@ -34,7 +35,8 @@ define(["modules/jquery-mozu",
         var ShippingDestinationItemView = Backbone.MozuView.extend({
             templateName: 'modules/multi-ship-checkout/shipping-destinations-item',
             additionalEvents: {
-                    "change [data-mz-destination-quantity]": "handleChangeQuantity"
+                    "change [data-mz-destination-quantity]": "handleChangeQuantity",
+                    "change [data-mz-fulfillment-contact]": "handleChangeDestinationAddress"
             },
             renderOnChange: [
                 'fulfillmentInfoId',
@@ -50,15 +52,14 @@ define(["modules/jquery-mozu",
                     }, 300);
                 update();
             },
-            // handleChangeDestinationAddress: function(e){
-            //     var self = this;
-            //     var $target = $(e.currentTarget),
-            //     selectedFulfillmentId = $target.val();
-            
-            //     if(selectedFulfillmentId){
-            //         self.changeDestinationAddress(selectedFulfillmentId);    
-            //     }
-            // },
+            handleChangeDestinationAddress: function(e){
+                var self = this;
+                var $target = $(e.currentTarget);
+
+                self.model.changeDestinationAddress($target.val());
+                self.render();
+
+            },
             handleNewContact: function(e){
                 var self = this;
             },
@@ -68,16 +69,15 @@ define(["modules/jquery-mozu",
             handleAddNewDestination: function(e){
                 var $target = $(e.currentTarget),
                     itemId = $target.parents('[data-mz-shipping-destinations-item]').data('mzItemId');
-
-                this.model.addNewDestination();
-                this.render();
+                 if(this.model.get('fulfillmentContactId')){
+                    this.model.addNewDestination();
+                }
             },
             handleRemoveDestination: function(e){
                 var $target = $(e.currentTarget),
                     itemId = $target.parents('[data-mz-shipping-destinations-item]').data('mzItemId');
 
                 this.model.removeDestination();
-                this.render();
             },
             initialize: function(){
                 var self = this;
@@ -88,67 +88,26 @@ define(["modules/jquery-mozu",
         var ShippingDestinationView = Backbone.MozuView.extend({
                 templateName: 'modules/multi-ship-checkout/shipping-destinations-items',
                 initialize: function(){
-
-                    // this.listenTo(this.model, 'change:fulfillmentInfoId', function (destination, scope) {
-                    //     this.render();
-                    // }, this);
+                    var self = this;
+                    this.listenTo(this.model, 'addedNewDestination', function() {
+                        self.render();
+                    });
+                    this.listenTo(this.model, 'changeDestination', function() {
+                        self.render();
+                    });
                 },
-            //     parentShippingDestination: function(target){
-            //         var $target = $(target);
-            //         return $target.parents('[data-mz-shipping-destinations-item]');
-            //     },
-            //     parentShippingDestinationModel: function(target){
-            //         var modelId = this.parentShippingDestination(target).data('mzModelId');
-            //         return this.model.get('items').get({ cid:modelId});
-            //     },
-            //     handleChangeQuantity: function(e){
-            //     var self = this;
-            //     var model = self.parentShippingDestinationModel(e.currentTarget);
-            //     var update = _.debounce(function(){
-            //             model.updateDestinationQuanitiy(quantity);
-            //             self.render();
-            //         }, 300);
-            //     update();
-            // },
-            // handleChangeDestinationAddress: function(e){
-            //     var self = this;
-            //     var $target = $(e.currentTarget),
-            //     selectedFulfillmentId = $target.val();
-            
-            //     if(selectedFulfillmentId){
-            //         self.parentShippingDestinationModel(target).changeDestinationAddress(selectedFulfillmentId);    
-            //     }
-            // },
-            // handleNewContact: function(e){
-            //     var self = this;
-            // },
-            // handleEditContact: function(e){
-            //     var self = this;
-            // },
-            // handleAddNewDestination: function(e){
-            //     var $target = $(e.currentTarget),
-            //         itemId = $target.parents('[data-mz-shipping-destinations-item]').data('mzItemId');
+                childSelector :function(){
 
-            //     this.model.addNewDestination();
-            //     this.render();
-            // },
-            // handleRemoveDestination: function(e){
-            //     var $target = $(e.currentTarget),
-            //         itemId = $target.parents('[data-mz-shipping-destinations-item]').data('mzItemId');
-
-            //     this.model.removeDestination(itemId);
-            //     this.render();
-            // },
-                
+                },
                 render : function() {
-                   var self = this;
+                    var self = this;
                     Backbone.MozuView.prototype.render.apply(this, arguments);
 
                     $.each(this.$el.find('[data-mz-shipping-destinations-item]'), function(index, val) {
 
                         var modelId = $(this).data('mzModelId');
-                        var fulfillmentId = $(this).data('mzFulfillmentInfoId');
-                        var shippingDestinationItem = self.model.get('items').findWhere({fulfillmentInfoId: fulfillmentId});
+                        var fulfillmentId = $(this).data('mzFulfillmentContactId');
+                        var shippingDestinationItem = self.model.get('items').findWhere({fulfillmentContactId: fulfillmentId});
                         var shippingDestinationItemView = new ShippingDestinationItemView({
                             el: $(this),
                             model: shippingDestinationItem
@@ -162,7 +121,9 @@ define(["modules/jquery-mozu",
                 templateName: 'modules/multi-ship-checkout/step-shipping-destinations',
                 render: function(){
                     var self = this;
-                    Backbone.MozuView.prototype.render.apply(this, arguments);
+                    this.$el.removeClass('is-new is-incomplete is-complete is-invalid').addClass('is-' + this.model.stepStatus());
+                    EditableView.prototype.render.apply(this, arguments);
+                    this.resize();
 
                     $.each(this.$el.find('[data-mz-shipping-destinations-items]'), function(index, val) {
 

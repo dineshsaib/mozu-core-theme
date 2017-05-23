@@ -88,7 +88,7 @@ function ($, _, Hypr, Backbone, api, HyprLiveContext, CheckoutStep, FulfillmentC
                 if (!this.requiresFulfillmentInfo()) return this.stepStatus('complete');
 
                 // If there's no shipping address yet, go blank.
-                if (this.get('fulfillmentContact').stepStatus() !== 'complete') {
+                if (this.parent.get('shippingDestinations').stepStatus() !== 'complete') {
                     return this.stepStatus('new');
                 }
 

@@ -15,15 +15,31 @@ function ($, _, Hypr, Backbone, api, HyprLiveContext, CustomerModels, CheckoutSt
         dataTypes: {
             fulfillmentInfoId: function(val) {
                     return (val === 'new') ? val : Backbone.MozuModel.DataTypes.Int(val);
+                },
+            fulfillmentContactId: function(val) {
+                    return (val === 'new') ? val : Backbone.MozuModel.DataTypes.Int(val);
                 }
         },
-        helpers: ['fulfillmentContacts', 'filteredFulfillmentContacts'],
+        helpers: ['fulfillmentContacts'],
+        idAttribute: "fulfillmentContactId",
+        validation: {
+            'fulfillmentContactId': function (value) {
+                    if (!value || typeof value !== "number") return Hypr.getLabel('passwordMissing');
+                }
+
+        },
         initialize: function(){
             var self = this;
 
-            //Placeholder for fulfillmentID
+            //TO-DO : Remove
+            //TEMP
+            //Placeholder for fulfillmentContactID
             
-            self.set('fulfillmentInfoId', 'new');
+            self.set('fulfillmentContactId', 'new');
+
+            //Placeholder for fulfillmentInfoID
+            //
+            //self.set('fulfillmentInfoId', _.uniqueId());
         },
         
         decreaseQuanitiyByOne: function(){
@@ -32,32 +48,8 @@ function ($, _, Hypr, Backbone, api, HyprLiveContext, CustomerModels, CheckoutSt
                 this.updateDestinationQuanitiy(quantity - 1);
             }
         },
-        getCheckout : function(){
-            return this.collection.parent.collection.parent.parent;
-        },
-        getFulfillmentInfo : function(){
-            return this.getCheckout().get('fulfillmentInfo');
-        },
-        getCustomerInfo : function(){
-            return this.getCheckout().get('customer');
-        },
-        selectedFulfillmentAddress : function(){
-            return this.collection.parent.selectedFulfillmentAddress();     
-        },
         fulfillmentContacts : function(){
-           return this.getCustomerInfo().get('contacts').toJSON();
-        },
-        filteredFulfillmentContacts : function() {
-            var self =this;
-            _.filter(self.fulfillmentContacts(), function(fulfillmentContact){
-                return _.filter(self.selectedFulfillmentAddress(), function(fulfillmentId){
-                    if(fulfillmentContact.id == fulfillmentId && self.fulfillmentId != fulfillmentId){
-                        return true;
-                    }
-                    return false;
-                })
-
-            })
+           return this.collection.parent.fulfillmentContacts();
         },
         /**
          * Calls the SDK to update the checkout qunaity for that item. 
@@ -72,20 +64,29 @@ function ($, _, Hypr, Backbone, api, HyprLiveContext, CustomerModels, CheckoutSt
          * Sets the checkout items fulfillmentInfoId and saves this via the SDK 
          * 
          */
+        toggleSelectedContact :function(fulfillmentId){
+            var self = this;
+            var contact = _.findWhere(self.fulfillmentContacts(), {id: Number(fulfillmentId)});
+            if(contact)
+                contact.selected = (contact.selected) ? false : true; 
+        },
         changeDestinationAddress: function(fulfillmentId){
             var self = this;
-            self.set('fulfillmentInfoId', fulfillmentId);
-            return this;
+            self.toggleSelectedContact(self.get('fulfillmentContactId'));
+            self.toggleSelectedContact(fulfillmentId);
+            self.set({fulfillmentContactId: fulfillmentId});
+            self.collection.parent.trigger('changeDestination');
         },
         /**
          * Gets the apporperate fulfillmentContact and fires the [] event to 
          * open our fulfillmentContact modal editor.
          */
         editSavedContact: function(){
-            this.get('fullfilmentInfoId');
+            this.get('fulfillmentContactId'); 
         },
         addNewDestination: function(){
-            this.collection.parent.addNewDestination();
+            if(!this.validate())
+                this.collection.parent.addNewDestination();
         },
         removeDestination: function(){
             this.collection.parent.removeDestination(this.get('lineId'), this.get('id'));
@@ -102,6 +103,29 @@ function ($, _, Hypr, Backbone, api, HyprLiveContext, CustomerModels, CheckoutSt
             })
         },
         idAttribute: "lineId",
+        validation: {
+            ShippingDestinationItem : "shippingDestinationItem"
+        },
+        shippingDestinationItem : function(){
+            var itemValidations =[];
+            this.get('items').each(function(item,idx){
+                var validation = item.validate();
+                if(validation) itemValidations.push(validation);
+            })
+           
+            return itemValidations;
+        },
+        getCheckout : function(){
+            return this.collection.parent.parent;
+        },
+        getCustomerInfo : function(){
+            return this.getCheckout().get('customer');
+        },
+        fulfillmentContacts : function(){
+            if(!this._selectorFulfillmentContacts)
+                this._selectorFulfillmentContacts = this.getCustomerInfo().get('contacts').toJSON();
+           return this._selectorFulfillmentContacts;
+        },
         //validation: CustomerModels.Contact.prototype.validation,
         initialize: function(){
             // var self = this;
@@ -118,9 +142,6 @@ function ($, _, Hypr, Backbone, api, HyprLiveContext, CustomerModels, CheckoutSt
             var self = this,
             newItem = self.get('items').toJSON(); 
 
-            newItem[0].quantity = 1;
-            if(newItem[0])
-            self.get('items').add(new ShippingDestination(newItem[0]));
 
             var destinationToSubtractFrom = self.get('items').find(function(destination){
                 if(destination.get('quantity') > 1){
@@ -132,7 +153,14 @@ function ($, _, Hypr, Backbone, api, HyprLiveContext, CustomerModels, CheckoutSt
             if(destinationToSubtractFrom){
                 destinationToSubtractFrom.decreaseQuanitiyByOne();
             }
-            
+
+            newItem[0].quantity = 1;
+            newItem[0].fulfillmentContactId = 'new';
+            if(newItem[0])
+            self.get('items').add(new ShippingDestinationItem(newItem[0]));
+
+
+            self.trigger('addedNewDestination');
         },
         selectedFulfillmentAddress : function(){
             var self = this;
@@ -146,27 +174,15 @@ function ($, _, Hypr, Backbone, api, HyprLiveContext, CustomerModels, CheckoutSt
 
         }
     });
-    //
-    // [{lineId: int, items: []}]
-    //
-    var CheckoutItems = Backbone.Collection.extend({
-        /**
-         * Adds a new shipping destination for the checkout item
-         * - If other addresses have multiple items subtract 1 from the closest adjacent item.
-         * - If other addresses have only 1 item, simple add address
-         * Api call to set new address is not made until an address is selected
-         */
-        
-        initialize: function(){
-            
-        }
-    });
 
     var ShippingStep = CheckoutStep.extend({
         relations : {
             items : Backbone.Collection.extend({
                 model: ShippingDestination
             })
+        },
+        validation: {
+            ShippingDestination : "validateShippingDestination"
         },
         initSet : function(){
            var self = this;
@@ -175,91 +191,26 @@ function ($, _, Hypr, Backbone, api, HyprLiveContext, CustomerModels, CheckoutSt
             _.each(groupedOrderItems, function(value, key){
                 self.get('items').add(new ShippingDestination({ lineId: key, items: value }));
             }); 
-        }
-    });
-
-    
-
-    var FulfillmentContact = Backbone.Collection.extend({
-            relations: CustomerModels.Contact.prototype.relations,
-            validation: CustomerModels.Contact.prototype.validation,
-            digitalOnlyValidation: {
-                'email': {
-                    pattern: 'email',
-                    msg: Hypr.getLabel('emailMissing')
+        },
+        validateShippingDestination : function(value, attr, computedState){
+            var itemValidations =[];
+            this.get('items').each(function(item,idx){
+                var validation = item.validate();
+                if(validation.ShippingDestinationItem.length) itemValidations = itemValidations.concat(validation.ShippingDestinationItem);
+            })
+            return (itemValidations.length) ? itemValidations : null;
+        },
+        toJSON: function() {
+                if (this.requiresFulfillmentInfo() || this.requiresDigitalFulfillmentContact()) {
+                    return CheckoutStep.prototype.toJSON.apply(this, arguments);
                 }
             },
-            dataTypes: {
-                contactId: function(val) {
-                    return (val === 'new') ? val : Backbone.MozuModel.DataTypes.Int(val);
-                }
+            //Rename for clear
+        isDigitalValid: function() {
+                var email = this.get('email');
+                return (!email) ? false : true;
             },
-            helpers: ['contacts'],
-            /**
-             * [getOrder] Gets the Parent Checkout Model. Fulfillment Contact is child of Fulfillment Info and must go 1 more level up.
-             * @return {CheckoutStep} 
-             * 
-             */
-            getOrder: function() {
-                return this.parent.parent;
-            },
-            contacts: function() {
-                var contacts = this.getOrder().get('customer').get('contacts').toJSON();
-                return contacts && contacts.length > 0 && contacts;
-            },
-            initialize: function() {
-                var self = this;
-                //
-                // Remove Event Listener for Change Contact Id, Add call to change
-                //
-                // this.on('change:contactId', function (model, newContactId) {
-                //     if (!newContactId || newContactId === 'new') {
-                //         model.get('address').clear();
-                //         model.get('phoneNumbers').clear();
-                //         model.unset('id');
-                //         model.unset('firstName');
-                //         model.unset('lastNameOrSurname');
-                //     } else {
-                //         model.set(model.getOrder().get('customer').get('contacts').get(newContactId).toJSON(), {silent: true});
-                //     }
-                // });
-            },
-            validateModel: function() {
-                var validationObj = this.validate();
-
-                if (validationObj) {
-                    Object.keys(validationObj).forEach(function(key) {
-                        this.trigger('error', {
-                            message: validationObj[key]
-                        });
-                    }, this);
-
-                    return false;
-                }
-                return true;
-            },
-            setNewContact: function() {
-                var self = this;
-                self.set('contactId', 'new');
-                self.get('address').clear();
-                self.get('phoneNumbers').clear();
-                self.unset('id');
-                self.unset('firstName');
-                self.unset('lastNameOrSurname');
-            },
-            updateContact: function(contactId) {
-                var self = this;
-                self.set('contactId', contactId);
-                if (!contactId || contactId === 'new') {
-                    self.setNewContact();
-                    return;
-                }
-                self.get('address').clear();
-                self.set(self.getOrder().get('customer').get('contacts').get(contactId).toJSON(), {
-                    silent: true
-                });
-            },
-            calculateStepStatus: function() {
+        calculateStepStatus: function() {
                 if (!this.requiresFulfillmentInfo() && this.requiresDigitalFulfillmentContact()) {
                     this.validation = this.digitalOnlyValidation;
                 }
@@ -267,54 +218,23 @@ function ($, _, Hypr, Backbone, api, HyprLiveContext, CustomerModels, CheckoutSt
                 if (!this.requiresFulfillmentInfo() && !this.requiresDigitalFulfillmentContact()) return this.stepStatus('complete');
                 return CheckoutStep.prototype.calculateStepStatus.apply(this);
             },
-            // //
-            // Duplicate from parent Item
-            // //
-            // getOrder: function () {
-            //     // since this is one step further away from the order, it has to be accessed differently
-            //     return this.parent.parent;
-            // },
-            choose: function(e) {
-                var idx = parseInt($(e.currentTarget).val(), 10);
-                if (idx !== -1) {
-                    var addr = this.get('address');
-                    var valAddr = addr.get('candidateValidatedAddresses')[idx];
-                    for (var k in valAddr) {
-                        addr.set(k, valAddr[k]);
-                    }
-                }
-            },
-            toJSON: function() {
-                if (this.requiresFulfillmentInfo() || this.requiresDigitalFulfillmentContact()) {
-                    return CheckoutStep.prototype.toJSON.apply(this, arguments);
-                }
-            },
-            //Rename for clear
-            isDigitalValid: function() {
-                var email = this.get('email');
-                return (!email) ? false : true;
-            },
-            //Rename for clear
-            // Breakup into seperate api update for fulfillment
-            nextDigitalOnly: function() {
-                var self = this,
-                order = this.getOrder();
+        validateModel: function() {
+                var validationObj = this.validate();
 
-                if (self.validate()) {
+                if (validationObj) {
+                    Object.keys(validationObj.ShippingDestination).forEach(function(key) {
+                        Object.keys(validationObj.ShippingDestination[key]).forEach(function(keyLevel2) {
+                            this.trigger('error', {
+                                message: validationObj.ShippingDestination[key][keyLevel2]
+                            });
+                        }, this);
+                    }, this);
+
                     return false;
                 }
-                self.getOrder().apiModel.update({
-                    fulfillmentInfo: self.toJSON()
-                }).ensure(function() {
-                    self.isLoading(false);
-                    order.messages.reset();
-                    order.syncApiModel();
-
-                    self.calculateStepStatus();
-                    return order.get('billingInfo').calculateStepStatus();
-                });
+                return true;
             },
-            validateAddresses: function() {
+        validateAddresses: function() {
                 var self = this,
                     order = this.getOrder(),
                     addr = this.get('address'),
@@ -373,27 +293,17 @@ function ($, _, Hypr, Backbone, api, HyprLiveContext, CustomerModels, CheckoutSt
                     return self.nextDigitalOnly();
                 }
 
-                //Moved to Validate Model
-                // var validationObj = this.validate();
-
-                // if (validationObj) { 
-                //     Object.keys(validationObj).forEach(function(key){
-                //         this.trigger('error', {message: validationObj[key]});
-                //     }, this);
-
-                //     return false;
-                // }
                 if (!self.validateModel()) return false;
 
                 var order = self.getOrder(),
-                    fulfillmentInfo = self.parent;
+                    fulfillmentInfo = order.get('fulfillmentInfo');
 
                 self.isLoading(false);
 
                 var completeStep = function() {
                     order.messages.reset();
                     order.syncApiModel();
-                    fulfillmentInfo.getShippingMethodsFromContact();
+                    fulfillmentInfo.shippingInfoUpdated();
                     self.calculateStepStatus();
                     //
                     // Remove getShippingMethodsFromContact, move to shipping Fulfillment as call to refresh
@@ -411,8 +321,76 @@ function ($, _, Hypr, Backbone, api, HyprLiveContext, CustomerModels, CheckoutSt
                     //     //parent.calculateStepStatus();
                     // });                  
                 };
-                self.validateAddresses().then(function() {
-                    completeStep();
+                completeStep();
+
+            }
+    });
+
+    
+
+    var FulfillmentContact = Backbone.Collection.extend({
+            relations: CustomerModels.Contact.prototype.relations,
+            validation: CustomerModels.Contact.prototype.validation,
+            digitalOnlyValidation: {
+                'email': {
+                    pattern: 'email',
+                    msg: Hypr.getLabel('emailMissing')
+                }
+            },
+            dataTypes: {
+                contactId: function(val) {
+                    return (val === 'new') ? val : Backbone.MozuModel.DataTypes.Int(val);
+                }
+            },
+            helpers: ['contacts'],
+            /**
+             * [getOrder] Gets the Parent Checkout Model. Fulfillment Contact is child of Fulfillment Info and must go 1 more level up.
+             * @return {CheckoutStep} 
+             * 
+             */
+            getOrder: function() {
+                return this.parent.parent;
+            },
+            contacts: function() {
+                var contacts = this.getOrder().get('customer').get('contacts').toJSON();
+                return contacts && contacts.length > 0 && contacts;
+            },
+            initialize: function() {
+                var self = this;
+                //
+                // Remove Event Listener for Change Contact Id, Add call to change
+                //
+                // this.on('change:contactId', function (model, newContactId) {
+                //     if (!newContactId || newContactId === 'new') {
+                //         model.get('address').clear();
+                //         model.get('phoneNumbers').clear();
+                //         model.unset('id');
+                //         model.unset('firstName');
+                //         model.unset('lastNameOrSurname');
+                //     } else {
+                //         model.set(model.getOrder().get('customer').get('contacts').get(newContactId).toJSON(), {silent: true});
+                //     }
+                // });
+            },
+            setNewContact: function() {
+                var self = this;
+                self.set('contactId', 'new');
+                self.get('address').clear();
+                self.get('phoneNumbers').clear();
+                self.unset('id');
+                self.unset('firstName');
+                self.unset('lastNameOrSurname');
+            },
+            updateContact: function(contactId) {
+                var self = this;
+                self.set('contactId', contactId);
+                if (!contactId || contactId === 'new') {
+                    self.setNewContact();
+                    return;
+                }
+                self.get('address').clear();
+                self.set(self.getOrder().get('customer').get('contacts').get(contactId).toJSON(), {
+                    silent: true
                 });
             }
         });

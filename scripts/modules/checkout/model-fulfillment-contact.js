@@ -30,12 +30,13 @@ define([
              * @return {CheckoutStep} 
              * 
              */
-            getOrder: function() {
-                return this.parent.parent;
-            },
+            
             contacts: function() {
                 var contacts = this.getOrder().get('customer').get('contacts').toJSON();
                 return contacts && contacts.length > 0 && contacts;
+            },
+            getOrder: function(){
+                return this.parent.getOrder();
             },
             initialize: function() {
                 var self = this;

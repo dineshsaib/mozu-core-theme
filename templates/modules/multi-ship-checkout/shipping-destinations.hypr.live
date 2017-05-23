@@ -11,6 +11,6 @@
     </div>
   {% endfor %}
 </div>
-<div class="mz-formstep-summary mz-addresssummary mz-checkoutform-active">
+<div class="mz-formstep-summary mz-addresssummary ">
   <span class="mz-summary-text"> {{ labels.multiShipAddressSummary|string_format(model.fulfillmentinfo.length)}}</span>    
 </div>

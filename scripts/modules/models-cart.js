@@ -1,9 +1,9 @@
 ﻿define(['underscore', 'modules/backbone-mozu', 'hyprlive', "modules/api",
-    "hyprlivecontext"
+    "hyprlivecontext", "modules/models-product"
     ], function (_, Backbone, Hypr, api,
-        HyprLiveContext) {
+        HyprLiveContext, ProductModels) {
 
-    var CartItemProduct = Backbone.MozuModel.extend({
+    var CartItemProduct = ProductModels.Product.extend({
         helpers: ['mainImage'],
         mainImage: function() {
             var imgs = this.get("productImages"),

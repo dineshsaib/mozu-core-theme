@@ -72,6 +72,13 @@
 
     </div><!-- left .column -->
 
+    {% block modal-dialog %}
+        <div mz-modal-dialog>
+            {% include "modules/multi-ship-checkout/modal-contact" %}
+        </div>
+    {% endblock modal-dialog %} 
+
+
 </form>
 
 </div>

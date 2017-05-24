@@ -11,10 +11,11 @@ define([
     'modules/checkout/models-checkout-step',
     'modules/checkout/model-fulfillment-info',
     'modules/checkout/models-shipping-destinations',
-    'modules/checkout/models-payment'
+    'modules/checkout/models-payment',
+    'modules/models-dialog'
 ],
     function ($, _, Hypr, Backbone, api, CustomerModels, AddressModels, PaymentMethods, 
-        HyprLiveContext, CheckoutStep, FulfillmentInfo, ShippingDestinations, BillingInfo) {
+        HyprLiveContext, CheckoutStep, FulfillmentInfo, ShippingDestinations, BillingInfo, ModalDialog) {
 
     var checkoutPageValidation = {
             'emailAddress': {
@@ -57,6 +58,9 @@ define([
                 }
             }, this);
         }
+var ContactContent = ModalDialog.extend({
+
+});
 
 var CheckoutPage = Backbone.MozuModel.extend({
             mozuType: 'order',

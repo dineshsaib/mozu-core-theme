@@ -299,13 +299,6 @@
         },
         {
             "entityType": "order",
-            "id": "checkout",
-            "template": "checkout",
-            "title": "Checkout",
-            "userCreatable": false
-        },
-        {
-            "entityType": "order",
             "id": "confirmation",
             "template": "confirmation",
             "title": "Confirmation",

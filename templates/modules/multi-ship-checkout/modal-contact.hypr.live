@@ -1,0 +1,7 @@
+{% extends "modules/common/modal-dialog" %}
+
+{% block modal-body %}
+<div id="mzContactDialog" class="mz-contact-dialog">
+	{% include "modules/common/address-form" }
+</div>
+{% endblock modal-body %}

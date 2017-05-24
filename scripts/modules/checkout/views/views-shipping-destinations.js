@@ -61,6 +61,7 @@ define(["modules/jquery-mozu",
 
             },
             handleNewContact: function(e){
+                this.model.addNewContact();
                 var self = this;
             },
             handleEditContact: function(e){

@@ -1,4 +1,4 @@
-<div class="modal-dialog">
+<div id="mzModalDialog" class="modal-dialog">
   <div class="modal-content">
     <div class="modal-header">
     {% block modal-header %}
@@ -11,6 +11,7 @@
     </div>
     <div class="modal-footer">
       {% block modal-footer %}
+        <button type="button" class="mz-button" data-mz-action="handleDialogSave">Save</button>
       {% endblock modal-footer %}
     </div>
   </div><!-- /.modal-content -->

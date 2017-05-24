@@ -132,7 +132,7 @@ function ($, _, Hypr, Backbone, api, HyprLiveContext, CheckoutStep, FulfillmentC
             initSet : function(){
                 var self = this;
                 self = this;
-                this.items.reset();
+                //this.items.reset();
                 _.each(self.unquieFulfillmentContactsOnOrders(), function(id){
                     self.createFulfillmentItem(id);
                 }) 
@@ -140,6 +140,8 @@ function ($, _, Hypr, Backbone, api, HyprLiveContext, CheckoutStep, FulfillmentC
             getOrder: function() {
                 return this.parent;
             },
+            //TODO
+            //TEMP FUNCTION TO REMOVE
             unquieFulfillmentContactsOnOrders : function(){
                 var self =this,
                     contactIds = []
@@ -149,8 +151,9 @@ function ($, _, Hypr, Backbone, api, HyprLiveContext, CheckoutStep, FulfillmentC
                 return _.uniq(contactIds);
             },
             createFulfillmentItem: function(contactId){
-                var contact = this.getOrder().get('customer').get('contacts').findWhere({contactId : contactId}); 
-                this.get('items').add(new FulfillmentInfoItem({fulfillmentContact: contact.toJSON()}));
+                var contact = this.getOrder().get('customer').get('contacts').findWhere({contactId : contactId});
+                if(contact)
+                    this.get('items').add(new FulfillmentInfoItem({fulfillmentContact: contact.toJSON()}));
             },
             shippingInfoUpdated: function(){
                 this.trigger('shippingInfoUpdated');

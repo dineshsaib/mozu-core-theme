@@ -11,9 +11,10 @@ require(["modules/jquery-mozu",
     'modules/checkout/views-checkout-step',
     'modules/checkout/views/views-shipping-destinations',
     'modules/checkout/views/views-shipping-methods',
-    'modules/checkout/views/views-payments'], 
+    'modules/checkout/views/views-payments',
+    'modules/checkout/views/contact-dialog'], 
     function ($, _, Hypr, Backbone, messageViewFactory, CartMonitor, HyprLiveContext, EditableView, preserveElements, 
-        CheckoutModels, CheckoutStepView, ShippingDestinationsView, ShippingMethodsView, PaymentView) {
+        CheckoutModels, CheckoutStepView, ShippingDestinationsView, ShippingMethodsView, PaymentView, ContactDialog) {
 
     var OrderSummaryView = Backbone.MozuView.extend({
         templateName: 'modules/checkout/checkout-order-summary',
@@ -194,6 +195,7 @@ require(["modules/jquery-mozu",
       return conf;
     };
 
+
     $(document).ready(function () {
 
         var $checkoutView = $('#checkout-form'),
@@ -231,7 +233,6 @@ require(["modules/jquery-mozu",
                     el: $('#comments-field'),
                     model: checkoutModel
                 }),
-                
                 reviewPanel: new ReviewOrderView({
                     el: $('#step-review'),
                     model: checkoutModel

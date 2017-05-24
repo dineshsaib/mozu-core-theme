@@ -6,8 +6,9 @@ require(["modules/jquery-mozu",
     "modules/cart-monitor", 
     'hyprlivecontext', 
     'modules/editable-view', 
-    'modules/preserve-element-through-render'], 
-    function ($, _, Hypr, Backbone, CheckoutModels, messageViewFactory, CartMonitor, HyprLiveContext, EditableView, preserveElements) {
+    'modules/preserve-element-through-render',
+    'modules/modals-dialog'], 
+    function ($, _, Hypr, Backbone, CheckoutModels, messageViewFactory, CartMonitor, HyprLiveContext, EditableView, preserveElements, ModelDialog) {
 
 
     var CheckoutStepView = EditableView.extend({
@@ -500,6 +501,8 @@ require(["modules/jquery-mozu",
       conf.model.on('error', killMask);
       return conf;
     };
+
+
 
     $(document).ready(function () {
 

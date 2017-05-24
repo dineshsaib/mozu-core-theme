@@ -75,7 +75,7 @@ define(["modules/api", 'underscore', "modules/backbone-mozu", "hyprlive", "modul
                 selectedForReturn: Backbone.MozuModel.DataTypes.Boolean
             },
             helpers: ['formatedFulfillmentDate'],
-            //To-Do: Double Check for useage
+            //TODO: Double Check for useage
             getOrder: function() {
                 return this.collection.parent;
             },

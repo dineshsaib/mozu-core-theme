@@ -6,9 +6,10 @@ define([
     'modules/api',
     'hyprlivecontext',
     'modules/models-customer',
-    'modules/checkout/models-checkout-step'
+    'modules/checkout/models-checkout-step',
+    'modules/modal-dialog'
 ],
-function ($, _, Hypr, Backbone, api, HyprLiveContext, CustomerModels, CheckoutStep) {
+function ($, _, Hypr, Backbone, api, HyprLiveContext, CustomerModels, CheckoutStep, ModalDialog) {
 
     var ShippingDestinationItem = Backbone.MozuModel.extend({
         //validation: CustomerModels.Contact.prototype.validation,
@@ -31,7 +32,7 @@ function ($, _, Hypr, Backbone, api, HyprLiveContext, CustomerModels, CheckoutSt
         initialize: function(){
             var self = this;
 
-            //TO-DO : Remove
+            //TODO : Remove
             //TEMP
             //Placeholder for fulfillmentContactID
             
@@ -90,6 +91,9 @@ function ($, _, Hypr, Backbone, api, HyprLiveContext, CustomerModels, CheckoutSt
         },
         removeDestination: function(){
             this.collection.parent.removeDestination(this.get('lineId'), this.get('id'));
+        },
+        addNewContact: function(){
+            this.collection.parnet.getCheckout().get('dialogContact').openDialog();
         }
 
     });
